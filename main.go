@@ -5,5 +5,6 @@ import (
 )
 
 func main() {
-	fmt.Println("Hello, World!")
+	normalizedURLExample, _ := normalizeURL("https://www.boot.dev/lessons/")
+	fmt.Println(normalizedURLExample)
 }
