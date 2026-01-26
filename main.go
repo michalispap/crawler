@@ -5,6 +5,6 @@ import (
 )
 
 func main() {
-	normalizedURLExample, _ := normalizeURL("https://www.boot.dev/lessons/")
-	fmt.Println(normalizedURLExample)
+	normalizedURLExample, _ := normalizeURL("https://www.boot.dev/courses/")
+	fmt.Println(getH1FromHTML(normalizedURLExample))
 }
