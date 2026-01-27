@@ -6,12 +6,11 @@ import (
 )
 
 func normalizeURL(rawURL string) (string, error) {
-	urlStruct, err := url.Parse(rawURL) // Parse raw URL
+	urlStruct, err := url.Parse(rawURL)
 	if err != nil {
 		return "", err
 	}
 
-	// Normalize
 	urlStruct.Scheme = ""
 	urlStruct.Path, _ = strings.CutSuffix(urlStruct.Path, "/")
 
