@@ -4,22 +4,27 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"sync"
 )
 
-func crawlPage(rawBaseURL, rawCurrentURL string, pages map[string]int) {
+type config struct {
+	pages              map[string]PageData
+	baseURL            *url.URL
+	mu                 *sync.Mutex
+	concurrencyControl chan struct{}
+	wg                 *sync.WaitGroup
+}
+
+func (cfg *config) crawlPage(rawCurrentURL string) {
 	normCurrent, _ := normalizeURL(rawCurrentURL)
-	normBase, _ := normalizeURL(rawBaseURL)
+	normBase, _ := normalizeURL(cfg.baseURL.String())
 	if !strings.Contains(normCurrent, normBase) {
 		return
 	}
 
-	_, exists := pages[normCurrent]
-	if exists {
-		pages[normCurrent]++
+	if !cfg.addPageVisit(normCurrent) {
 		return
 	}
-
-	pages[normCurrent] = 1
 
 	fmt.Printf("Currently scraping: %s\n", rawCurrentURL)
 
@@ -46,6 +51,24 @@ func crawlPage(rawBaseURL, rawCurrentURL string, pages map[string]int) {
 	totalLinks := append(internalURLs, internalImages...)
 
 	for _, internalURL := range totalLinks {
-		crawlPage(rawBaseURL, internalURL, pages)
+		cfg.wg.Add(1)
+		go func(urlToCrawl string) {
+			cfg.concurrencyControl <- struct{}{}
+			defer func() {
+				<-cfg.concurrencyControl
+				cfg.wg.Done()
+			}()
+			cfg.crawlPage(urlToCrawl)
+		}(internalURL)
 	}
+}
+
+func (cfg *config) addPageVisit(normalizedURL string) (isFirst bool) {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
+	if _, exists := cfg.pages[normalizedURL]; exists {
+		return false
+	}
+	cfg.pages[normalizedURL] = PageData{}
+	return true
 }
