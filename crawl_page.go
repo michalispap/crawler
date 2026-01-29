@@ -41,8 +41,16 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 
 	rawHTML, err := getHTML(rawCurrentURL)
 	if err != nil {
+		cfg.mu.Lock()
+		delete(cfg.pages, normCurrent)
+		cfg.mu.Unlock()
 		return
 	}
+
+	pageData := extractPageData(rawHTML, rawCurrentURL)
+	cfg.mu.Lock()
+	cfg.pages[normCurrent] = pageData
+	cfg.mu.Unlock()
 
 	parsedURL, err := url.Parse(rawCurrentURL)
 	if err != nil {

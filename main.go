@@ -54,7 +54,5 @@ func main() {
 
 	cfg.wg.Wait()
 
-	for page, data := range cfg.pages {
-		fmt.Printf("%s: %+v\n", page, data)
-	}
+	writeCSVReport(cfg.pages, "report.csv")
 }
