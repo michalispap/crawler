@@ -13,18 +13,29 @@ type config struct {
 	mu                 *sync.Mutex
 	concurrencyControl chan struct{}
 	wg                 *sync.WaitGroup
+	maxPages           int
 }
 
 func (cfg *config) crawlPage(rawCurrentURL string) {
+	cfg.mu.Lock()
+	if len(cfg.pages) >= cfg.maxPages {
+		cfg.mu.Unlock()
+		return
+	}
+
 	normCurrent, _ := normalizeURL(rawCurrentURL)
 	normBase, _ := normalizeURL(cfg.baseURL.String())
 	if !strings.Contains(normCurrent, normBase) {
+		cfg.mu.Unlock()
 		return
 	}
 
 	if !cfg.addPageVisit(normCurrent) {
+		cfg.mu.Unlock()
 		return
 	}
+
+	cfg.mu.Unlock()
 
 	fmt.Printf("Currently scraping: %s\n", rawCurrentURL)
 
@@ -64,8 +75,6 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 }
 
 func (cfg *config) addPageVisit(normalizedURL string) (isFirst bool) {
-	cfg.mu.Lock()
-	defer cfg.mu.Unlock()
 	if _, exists := cfg.pages[normalizedURL]; exists {
 		return false
 	}
